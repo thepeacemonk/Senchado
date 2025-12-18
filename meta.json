@@ -1,0 +1,1 @@
+{"human_version": "1.0.0", "max_point_version": 45, "min_point_version": 45, "name": "Senchad\u014d \u2013 Tea Timer", "disabled": false, "config": {"current_tea": {"flavor_id": "matcha", "task_name": "Study Session", "temperature": 160, "prep_time": 300, "brew_time": 60, "cycles": 1}, "favorites": [], "ui_settings": {"reviewer_position": "top-right"}}}

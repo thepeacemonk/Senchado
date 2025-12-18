@@ -1,0 +1,7 @@
+{
+    "name": "Komori Timer",
+    "package": "komori_timer",
+    "min_point_version": 45,
+    "max_point_version": 45,
+    "human_version": "1.0.0"
+}

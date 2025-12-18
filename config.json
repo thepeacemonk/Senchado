@@ -1,0 +1,17 @@
+{
+    "current_tea": {
+        "flavor_id": "sencha",
+        "task_name": "Study Session",
+        "temperature": 80,
+        "prep_time": 1500,
+        "brew_time": 300,
+        "cycles": 1
+    },
+    "user_progress": {
+        "xp": 0,
+        "level": 1,
+        "total_brews": 0
+    },
+    "tea_history": [],
+    "favorites": []
+}
