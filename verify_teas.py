@@ -1,8 +1,7 @@
 import sys
 import os
 
-# Add src to path
-sys.path.append(os.path.join(os.getcwd(), "src"))
+# Src path append removed
 
 try:
     from tea_data import TEAS

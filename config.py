@@ -23,7 +23,8 @@ DEFAULT_CONFIG = {
     "tea_history": [],
     "favorites": [],
     "ui_settings": {
-        "reviewer_position": "top-right" # Options: top-left, top-right, bottom-left, bottom-right
+        "reviewer_position": "top-right", # Options: top-left, top-right, bottom-left, bottom-right
+        "silence_notifications": False
     }
 }
 
@@ -31,14 +32,14 @@ class ConfigManager:
     def __init__(self):
         self.config = {}
         # Path to tea_history.json in the addon root directory
-        self.tea_history_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tea_history.json")
+        self.tea_history_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tea_history.json")
         self.load()
 
     def load(self):
         # 1. Determine Addon Directory Name
-        addon_dir = os.path.basename(os.path.dirname(os.path.dirname(__file__)))
+        addon_dir = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
         if not addon_dir or addon_dir == "src":
-             addon_dir = "Komori Timer"
+             addon_dir = "Senchado"
 
         # 2. Load Anki Config (Preferences, current tea, etc.)
         anki_config = {}
@@ -105,9 +106,9 @@ class ConfigManager:
             print(f"Error saving tea_history.json: {e}")
 
     def save(self):
-        addon_dir = os.path.basename(os.path.dirname(os.path.dirname(__file__)))
+        addon_dir = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
         if not addon_dir or addon_dir == "src":
-             addon_dir = "Komori Timer"
+             addon_dir = "Senchado"
 
         # Separate data sources
         anki_keys = ["current_tea", "favorites", "ui_settings"]

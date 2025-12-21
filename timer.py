@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import Enum
+import os
 from aqt.qt import QTimer, pyqtSignal, QObject
-from ..config import manager
+from aqt.sound import av_player
+from .config import manager
 
 class TimerState(Enum):
     IDLE = 0
@@ -65,12 +67,27 @@ class SenchadoTimer(QObject):
     def _emit_tick(self):
         self.tick.emit(self.current_time, self.total_time, self.state.name)
 
+    def _play_sound(self, filename):
+        if manager.get_ui_settings().get("silence_notifications", False):
+            return
+            
+        addon_dir = os.path.dirname(os.path.abspath(__file__))
+        sound_path = os.path.join(addon_dir, "notification_sounds", filename)
+        
+        if os.path.exists(sound_path):
+            av_player.play_file(sound_path)
+
     def _on_phase_complete(self):
         self.timer.stop()
         if self.state == TimerState.PREPARATION:
+            # Play Prep Done sound
+            self._play_sound("notification.mp3")
             # Auto-transition to brewing
             self.start_brewing()
         elif self.state == TimerState.BREWING:
+            # Play Cycle Done sound
+            self._play_sound("new_cycle.mp3")
+            
             self._accumulate_xp()
             
             if self.cycles_current < self.cycles_total:

@@ -2,15 +2,483 @@ from aqt.qt import *
 from aqt import mw
 from aqt.theme import theme_manager
 import os
-from ..config import manager
-from ..tea_data import TEAS, get_available_teas, TeaFlavor
-from ..logic.timer import tea_timer
+import webbrowser
+from .config import manager
+from .tea_data import TEAS, get_available_teas, TeaFlavor
+from .timer import tea_timer
 from datetime import datetime
+
+class TeaOptionButton(QFrame):
+    clicked = pyqtSignal(str) # tea_id
+
+    def __init__(self, tea_id, parent=None):
+        super().__init__(parent)
+        self.tea_id = tea_id
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+    
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
+            self.clicked.emit(self.tea_id)
+        super().mouseReleaseEvent(event)
+
+class TeaSelectionMenu(QDialog):
+    def __init__(self, parent=None, colors=None, available_teas=None, current_tea_id=None, width=400):
+        super().__init__(parent)
+        # self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.colors = colors or {}
+        self.teas = available_teas or []
+        self.selected_tea_id = current_tea_id
+        self.menu_width = width
+        
+        self.setup_ui()
+        
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.activateWindow()
+        self.raise_()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        
+        # Main Container with shadow/border
+        container = QFrame()
+        container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {self.colors.get('card', '#FFFFFF')};
+                border: 1px solid {self.colors.get('border', '#CCCCCC')};
+                border-radius: 12px;
+            }}
+        """)
+        
+        container_layout = QVBoxLayout()
+        container_layout.setContentsMargins(5, 5, 5, 5) # Smaller margins for scroll area
+        container.setLayout(container_layout)
+        
+        addon_root = os.path.dirname(os.path.abspath(__file__))
+        
+        # Header with Close Button
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(8, 5, 8, 5)
+        
+        title = QLabel("Select Tea")
+        title.setStyleSheet(f"font-weight: bold; color: {self.colors.get('fg', '#000')}; font-size: 14px;")
+        
+        close_btn = QToolButton()
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        icon_path = os.path.join(addon_root, "icons", "xmark-simple.svg")
+        if os.path.exists(icon_path):
+            # Load and colorize SVG icon
+            src_pix = QPixmap(icon_path)
+            # Create a pixmap of the same size
+            colored_pix = QPixmap(src_pix.size())
+            colored_pix.fill(Qt.GlobalColor.transparent)
+            
+            painter = QPainter(colored_pix)
+            # Determine color based on theme - user requested #FFFFFF (dark mode) or #252925 (light mode)
+            icon_color = QColor("#FFFFFF") if theme_manager.night_mode else QColor("#252925")
+            
+            # Draw the icon using CompositionMode_SourceIn to colorize non-transparent pixels
+            # First map the source pixmap
+            painter.drawPixmap(0, 0, src_pix)
+            # Set composition mode
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+            # Fill with color
+            painter.fillRect(colored_pix.rect(), icon_color)
+            painter.end()
+            
+            close_btn.setIcon(QIcon(colored_pix))
+            close_btn.setIconSize(QSize(16, 16))
+        else:
+            close_btn.setText("✕")
+            
+        close_btn.setStyleSheet(f"""
+            QToolButton {{
+                background: transparent;
+                border: none;
+                color: {self.colors.get('fg', '#000')};
+                border-radius: 4px;
+            }}
+            QToolButton:hover {{
+                background: {self.colors.get('border', '#E0E0E0')};
+            }}
+        """)
+        close_btn.clicked.connect(self.reject)
+        
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        header_layout.addWidget(close_btn)
+        
+        container_layout.addLayout(header_layout)
+        
+        # Scroll Area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet(f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 8px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {self.colors.get('border', '#CCCCCC')};
+                min-height: 20px;
+                border-radius: 4px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+        """)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        # Grid Widget
+        grid_widget = QWidget()
+        grid_widget.setStyleSheet("background: transparent;")
+        
+        # Grid of teas
+        grid = QGridLayout()
+        grid.setSpacing(8)
+        grid_widget.setLayout(grid)
+        
+        # addon_root already defined above
+        
+        # Calculate columns based on count
+        # Fixed 1 column (List View) as requested
+        cols = 1
+        
+        for i, tea in enumerate(self.teas):
+            row = i // cols
+            col = i % cols
+            
+            
+            btn = TeaOptionButton(tea.id)
+            
+            # Styling based on selection
+            is_selected = (tea.id == self.selected_tea_id)
+            bg_color = self.colors.get('bg', '#F0F0F0')
+            border_color = self.colors.get('accent', '#4A6C4C') if is_selected else "transparent"
+            
+            btn.setStyleSheet(f"""
+                TeaOptionButton {{
+                    background-color: {bg_color};
+                    border: 2px solid {border_color};
+                    border-radius: 8px;
+                }}
+                TeaOptionButton:hover {{
+                    background-color: {self.colors.get('border', '#E0E0E0')};
+                }}
+            """)
+            
+            btn_layout = QHBoxLayout()
+            btn_layout.setContentsMargins(8, 8, 8, 8)
+            btn.setLayout(btn_layout)
+            
+            # Icon
+            icon_lbl = QLabel()
+            icon_lbl.setFixedSize(32, 32)
+            icon_lbl.setStyleSheet("border: none; background: transparent;")
+            icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            
+            img_path = os.path.join(addon_root, "tea_gallery", f"{tea.id}.png")
+            if os.path.exists(img_path):
+                pix = QPixmap(img_path)
+                pix = pix.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                icon_lbl.setPixmap(pix)
+            else:
+                icon_lbl.setText("🍵")
+            
+            # Text
+            text_layout = QVBoxLayout()
+            text_layout.setSpacing(2)
+            name_lbl = QLabel(tea.name)
+            name_lbl.setStyleSheet(f"border: none; background: transparent; font-weight: 600; color: {self.colors.get('fg', '#000')};")
+            name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            text_layout.addWidget(name_lbl)
+            
+            btn_layout.addWidget(icon_lbl)
+            btn_layout.addLayout(text_layout)
+            
+            # Connect signal
+            btn.clicked.connect(self.select_tea)
+            
+            grid.addWidget(btn, row, col)
+            
+        scroll.setWidget(grid_widget)
+        container_layout.addWidget(scroll)
+        layout.addWidget(container) # Add container to main layout
+        
+        # Dynamic resizing
+        import math
+        total_rows = math.ceil(len(self.teas) / cols)
+        row_height_approx = 60 # 48 content + padding/spacing
+        calculated_height = (total_rows * row_height_approx) + 20 # + margins
+        
+        
+        # Max height for ~3.5 rows to show scrolling is possible if many items
+        # row height approx 60. 3.5 * 60 = 210. + header/padding.
+        # "Limit height to ~250px"
+        max_height = 250
+        
+        final_height = min(calculated_height, max_height)
+        # Ensure minimum so it's not tiny
+        final_height = max(final_height, 100)
+        
+        self.setFixedHeight(final_height)
+        self.setFixedWidth(self.menu_width) # Match parent width
+        
+        # Install event filter on App to detect outside clicks (since we are not a real Popup anymore)
+        mw.app.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.MouseButtonPress:
+            # Handle Qt6 vs Qt5
+            if hasattr(event, "globalPosition"):
+                pos = event.globalPosition().toPoint()
+            else:
+                pos = event.globalPos()
+            
+            # Map global click to local coords to see if it's inside our geometry
+            # Or simpler: check if click is strictly outside our frame geometry
+            
+            # Note: mapFromGlobal maps to the widget's coordinate system (0,0 is top-left of widget)
+            # rect() is (0,0, width, height)
+            
+            # Only trigger if the click target isn't us or our children (already handled by event propagation usually, 
+            # but since we filter App events, we see everything)
+            
+            # Check if one of our children is under mouse? No need, rect check is enough.
+            # If click is inside us, rect().contains(mapFromGlobal(pos)) is True.
+            
+            if not self.rect().contains(self.mapFromGlobal(pos)):
+                self.reject()
+                return True
+        return super().eventFilter(obj, event)
+
+    def closeEvent(self, event):
+        # Clean up event filter
+        mw.app.removeEventFilter(self)
+        super().closeEvent(event)
+        
+    def select_tea(self, tea_id):
+        self.selected_tea_id = tea_id
+        self.accept()
+
+class ModernWarningDialog(QDialog):
+    def __init__(self, message, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.message = message
+        self.setup_ui()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        
+        # Colors
+        if theme_manager.night_mode:
+            self.c = {
+                "bg": "#1A1C19", "fg": "#E1E6DF", "border": "#3A3F39", 
+                "accent": "#7FA082", "btn_txt": "#1A1C19"
+            }
+        else:
+            self.c = {
+                "bg": "#FAFAF5", "fg": "#2C3E2D", "border": "#D8DED0", 
+                "accent": "#4A6C4C", "btn_txt": "#FFFFFF"
+            }
+            
+        container = QFrame()
+        container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {self.c['bg']};
+                border: 1px solid {self.c['border']};
+                border-radius: 12px;
+            }}
+        """)
+        
+        container_layout = QVBoxLayout()
+        container_layout.setContentsMargins(25, 25, 25, 25)
+        container_layout.setSpacing(20)
+        container.setLayout(container_layout)
+        
+        # Title
+        title_lbl = QLabel("🍵")
+        title_lbl.setStyleSheet(f"font-size: 40px; border: none; background: transparent;")
+        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        container_layout.addWidget(title_lbl)
+        
+        # Message
+        msg_lbl = QLabel(self.message)
+        msg_lbl.setWordWrap(True)
+        msg_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        msg_lbl.setStyleSheet(f"font-size: 14px; color: {self.c['fg']}; border: none; background: transparent;")
+        container_layout.addWidget(msg_lbl)
+        
+        # OK Button
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        ok_btn = QPushButton("OK")
+        ok_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        ok_btn.setFixedSize(100, 35)
+        ok_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.c['accent']};
+                color: {self.c['btn_txt']};
+                border-radius: 8px;
+                font-weight: 600;
+                border: none;
+            }}
+            QPushButton:hover {{
+                opacity: 0.9;
+            }}
+        """)
+        ok_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addStretch()
+        
+        container_layout.addLayout(btn_layout)
+        
+        layout.addWidget(container)
+        
+        # Sizing
+        self.setFixedWidth(320)
+        # Height dynamic
+
+class TeaSelector(QFrame):
+    teaSelected = pyqtSignal(str) # Emits tea_id
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.current_tea_id = None
+        self.colors = {}
+        self.setFixedHeight(45)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Ensure QFrame background works with stylesheets and transparency
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        
+        self.setup_ui()
+        
+    def setColors(self, colors):
+        self.colors = colors
+        self.update_style()
+        
+    def setup_ui(self):
+        layout = QHBoxLayout()
+        layout.setContentsMargins(15, 0, 15, 0)
+        layout.setAlignment(Qt.AlignmentFlag.AlignVCenter) # Center vertically
+        self.setLayout(layout)
+        
+        self.icon_lbl = QLabel()
+        self.icon_lbl.setFixedSize(28, 28) # Slightly smaller to fit 45px comfortably
+        self.icon_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        
+        self.name_lbl = QLabel("Select Tea")
+        self.name_lbl.setStyleSheet("font-weight: 600; font-size: 14px;")
+        self.name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        
+        self.chevron = QLabel("▼") # or an icon
+        self.chevron.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        
+        layout.addWidget(self.icon_lbl)
+        layout.addSpacing(10)
+        layout.addWidget(self.name_lbl)
+        layout.addStretch()
+        layout.addWidget(self.chevron)
+        
+    def update_style(self):
+        self.setStyleSheet(f"""
+            TeaSelector {{
+                background-color: {self.colors.get('card', '#FFFFFF')};
+                border: 1px solid {self.colors.get('border', '#CCCCCC')};
+                border-radius: 12px;
+            }}
+            TeaSelector:hover {{
+                border: 1px solid {self.colors.get('accent', '#4A6C4C')};
+            }}
+            QLabel {{
+                color: {self.colors.get('fg', '#000000')};
+                border: none;
+                background: transparent;
+            }}
+        """)
+        
+    def setTea(self, tea_id):
+        self.current_tea_id = tea_id
+        if tea_id in TEAS:
+            tea = TEAS[tea_id]
+            self.name_lbl.setText(tea.name)
+            
+            addon_root = os.path.dirname(os.path.abspath(__file__))
+            img_path = os.path.join(addon_root, "tea_gallery", f"{tea_id}.png")
+            if os.path.exists(img_path):
+                pix = QPixmap(img_path)
+                pix = pix.scaled(28, 28, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.icon_lbl.setPixmap(pix)
+            else:
+                self.icon_lbl.setText("🍵")
+        else:
+            self.name_lbl.setText("Unknown Tea")
+            self.icon_lbl.setText("❓")
+            
+        self.teaSelected.emit(tea_id)
+            
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.show_menu()
+            
+    def show_menu(self):
+        # Get parent settings to know available teas usually
+        # But we need access to progress/level...
+        # Let's assume parent has it or we pass it.
+        # Best way is for the main class to configure this, but logic is here.
+        # We'll use manager here since we're in the same file
+        progress = manager.get_progress()
+        available = get_available_teas(progress["level"])
+        
+        menu = TeaSelectionMenu(self, self.colors, available, self.current_tea_id, width=self.width())
+        
+        # Position menu below the selector
+        global_pos = self.mapToGlobal(QPoint(0, self.height() + 5))
+        
+        # Smart Positioning (Clamp to screen)
+        screen = self.screen() if hasattr(self, "screen") else QApplication.primaryScreen()
+        if screen:
+            screen_geo = screen.availableGeometry()
+            
+            # Check right edge
+            if global_pos.x() + menu.width() > screen_geo.right():
+                global_pos.setX(screen_geo.right() - menu.width() - 10)
+            
+            # Check bottom edge
+            if global_pos.y() + menu.height() > screen_geo.bottom():
+                # If it doesn't fit below, try above
+                above_y = self.mapToGlobal(QPoint(0, 0)).y() - menu.height() - 5
+                if above_y >= screen_geo.top():
+                    global_pos.setY(above_y)
+                else:
+                    # If it doesn't fit above either, clamp to bottom
+                     global_pos.setY(screen_geo.bottom() - menu.height() - 10)
+
+        menu.move(global_pos)
+        
+        if menu.exec():
+            if menu.selected_tea_id and menu.selected_tea_id != self.current_tea_id:
+                self.setTea(menu.selected_tea_id)
 
 class SenchadoSettings(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Komori Timer")
+        self.setWindowTitle("Senchado")
         self.setMinimumWidth(600)
         self.setMinimumHeight(500)
         
@@ -27,11 +495,84 @@ class SenchadoSettings(QDialog):
         # Content Stack (Initialize early for dependency, add to layout later)
         self.stack = QStackedWidget()
 
-        # Nav Bar
+        # Header Container
         self.header_container = QWidget()
         header_layout = QVBoxLayout()
-        header_layout.setContentsMargins(0, 20, 0, 0)
+        header_layout.setContentsMargins(40, 20, 40, 0)
         self.header_container.setLayout(header_layout)
+        
+        # Logo Row with Side Buttons
+        logo_row = QHBoxLayout()
+        logo_row.setSpacing(20)
+        
+        # Button colors based on theme
+        btn_bg = "#252925" if theme_manager.night_mode else "#3F6D49"
+        btn_text = "#FFFFFF"
+        btn_hover = "#3A3F39" if theme_manager.night_mode else "#4A7E54"
+        
+        # Left Button - Buy me a tea
+        buy_tea_btn = QPushButton("Buy me a tea")
+        buy_tea_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        buy_tea_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {btn_text};
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 13px;
+                min-width: 120px;
+                max-width: 140px;
+                min-height: 40px;
+                max-height: 40px;
+                padding: 0px 20px;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """)
+        buy_tea_btn.clicked.connect(lambda: webbrowser.open("https://buymeacoffee.com/peacemonk"))
+        
+        # Logo
+        logo_label = QLabel()
+        addon_root = os.path.dirname(os.path.abspath(__file__))
+        logo_filename = "Senchado_night.png" if theme_manager.night_mode else "Senchado.png"
+        logo_path = os.path.join(addon_root, logo_filename)
+        if os.path.exists(logo_path):
+            logo_pixmap = QPixmap(logo_path)
+            logo_pixmap = logo_pixmap.scaled(160, 160, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            logo_label.setPixmap(logo_pixmap)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Right Button - Report bug
+        report_btn = QPushButton("Report bug")
+        report_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        report_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {btn_text};
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 13px;
+                min-width: 120px;
+                max-width: 140px;
+                min-height: 40px;
+                max-height: 40px;
+                padding: 0px 20px;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """)
+        report_btn.clicked.connect(lambda: webbrowser.open("https://github.com/thepeacemonk/Komori"))
+        
+        logo_row.addStretch()
+        logo_row.addWidget(buy_tea_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
+        logo_row.addWidget(logo_label)
+        logo_row.addWidget(report_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
+        logo_row.addStretch()
+        
+        header_layout.addLayout(logo_row)
+        header_layout.addSpacing(10)
         
         self.setup_nav_bar()
         header_layout.addWidget(self.nav_bar)
@@ -64,10 +605,16 @@ class SenchadoSettings(QDialog):
         
         self.load_settings()
 
-        # Connect combo box change to sync selection with Level page
-        self.tea_combo.currentIndexChanged.connect(self.update_tea_selection_visuals)
+        # Connect tea selector signal
+        self.tea_selector.teaSelected.connect(self.update_tea_selection_visuals)
         # Initial visual update
         self.update_tea_selection_visuals()
+
+    def get_theme_colors(self):
+        # Helper to get colors for child widgets before setup_styles runs/or if needed
+        # Actually it's better if we just reuse self.c if setup_styles ran.
+        # But setup_styles runs in __init__.
+        return getattr(self, 'c', {})
 
     def setup_nav_bar(self):
         self.nav_bar = QFrame()
@@ -288,8 +835,13 @@ class SenchadoSettings(QDialog):
         card_layout.addRow(self.create_label("Task Name"), self.task_name_input)
 
         # Tea Selection
-        self.tea_combo = QComboBox()
-        card_layout.addRow(self.create_label("Select Tea"), self.tea_combo)
+        # Tea Selection
+        # self.tea_combo = QComboBox()
+        # card_layout.addRow(self.create_label("Select Tea"), self.tea_combo)
+        
+        self.tea_selector = TeaSelector()
+        self.tea_selector.setColors(self.c)
+        card_layout.addRow(self.create_label("Select Tea"), self.tea_selector)
 
         # Temperature
         # Temperature
@@ -372,7 +924,7 @@ class SenchadoSettings(QDialog):
         # --- Widget Position Section ---
         
         # Title
-        pos_title = QLabel("Tea Room configurations")
+        pos_title = QLabel("Tea Room on Reviewer")
         pos_title.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 10px; margin-top: 10px;")
         main_layout.addWidget(pos_title)
         
@@ -470,7 +1022,192 @@ class SenchadoSettings(QDialog):
         pos_container.addStretch()
         
         pos_card_layout.addLayout(pos_container)
+        
+        # 3. Silence Notifications
+        self.silence_check = QCheckBox("Silence notifications")
+        self.silence_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.silence_check.setStyleSheet(f"""
+            QCheckBox {{
+                font-weight: 500;
+                color: {self.c['fg']};
+            }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid {self.c['border']};
+                background: {self.c['card']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self.c['accent']};
+                border: 1px solid {self.c['accent']};
+            }}
+        """)
+        pos_card_layout.addWidget(self.silence_check)
         main_layout.addWidget(pos_card)
+
+        # --- Tea Room Widget Section ---
+        
+        widget_title = QLabel("Tea Room Widget")
+        widget_title.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 10px; margin-top: 10px;")
+        main_layout.addWidget(widget_title)
+
+        widget_card = QFrame()
+        widget_card.setProperty("class", "tea-card")
+        widget_layout = QFormLayout()
+        widget_layout.setContentsMargins(30, 30, 30, 30)
+        widget_layout.setSpacing(20)
+        widget_card.setLayout(widget_layout)
+
+        # 1. Opacity
+        self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.opacity_slider.setRange(10, 100) # Minimum 10%
+        self.opacity_slider.setSingleStep(10)
+        
+        # Modern Slider Style
+        self.opacity_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                border: 1px solid {self.c['border']};
+                height: 6px;
+                background: {self.c['border']};
+                margin: 2px 0;
+                border-radius: 3px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {self.c['accent']};
+                border: 1px solid {self.c['accent']};
+                width: 16px;
+                height: 16px;
+                margin: -6px 0;
+                border-radius: 8px;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {self.c['accent_hover']};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {self.c['accent']};
+                border-radius: 3px;
+            }}
+        """)
+        
+        opacity_container = QHBoxLayout()
+        opacity_container.addWidget(self.opacity_slider)
+        self.opacity_label = QLabel("100%")
+        self.opacity_label.setFixedWidth(40)
+        self.opacity_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        opacity_container.addWidget(self.opacity_label)
+        
+        self.opacity_slider.valueChanged.connect(lambda v: self.opacity_label.setText(f"{v}%"))
+        
+        widget_layout.addRow(self.create_label("Opacity"), opacity_container)
+
+        # 2. Glassmorphism
+        self.glass_check = QCheckBox("Enable Glassmorphism Effect")
+        self.glass_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.glass_check.setStyleSheet(f"""
+            QCheckBox {{
+                font-weight: 500;
+                color: {self.c['fg']};
+            }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid {self.c['border']};
+                background: {self.c['card']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self.c['accent']};
+                border: 1px solid {self.c['accent']};
+            }}
+        """)
+        widget_layout.addRow(self.create_label("Glassmorphism"), self.glass_check)
+        
+        # 2b. Glass Intensity
+        self.glass_slider = QSlider(Qt.Orientation.Horizontal)
+        self.glass_slider.setRange(0, 20) # Blur radius 0-20px
+        self.glass_slider.setSingleStep(1)
+        
+        # Reusing slider style
+        self.glass_slider.setStyleSheet(self.opacity_slider.styleSheet())
+        
+        glass_container = QHBoxLayout()
+        glass_container.addWidget(self.glass_slider)
+        self.glass_label = QLabel("12px")
+        self.glass_label.setFixedWidth(40)
+        self.glass_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        glass_container.addWidget(self.glass_label)
+        
+        self.glass_slider.valueChanged.connect(lambda v: self.glass_label.setText(f"{v}px"))
+        
+        # Only enable slider if glass is checked
+        self.glass_check.toggled.connect(self.glass_slider.setEnabled)
+        
+        widget_layout.addRow(self.create_label("Glass Strength"), glass_container)
+
+        # 3. Size
+        size_container = QHBoxLayout()
+        size_container.setSpacing(15)
+        
+        self.size_group = QButtonGroup(self)
+        self.size_buttons = {}
+        
+        # User requested: "Small (less info), Medium (more info), Big (Level, Session, Temp)"
+        sizes = [
+            ("small", "Small", "Level, Tea (200px)"),
+            ("medium", "Medium", "Level, Tea, Temp (300px)"), 
+            ("big", "Big", "Full Details (400px)") 
+        ]
+
+        for size_id, title, subtitle in sizes:
+            btn = QPushButton()
+            btn.setCheckable(True)
+            btn.setFixedSize(100, 60)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            btn.setProperty("size_id", size_id)
+            
+            btn_layout = QVBoxLayout(btn)
+            btn_layout.setContentsMargins(5,5,5,5)
+            btn_layout.setSpacing(2)
+            
+            b_title = QLabel(title)
+            b_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            b_title.setStyleSheet("font-weight: 600; border: none; background: transparent;")
+            
+            b_sub = QLabel(subtitle)
+            b_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            b_sub.setStyleSheet(f"font-size: 10px; border: none; background: transparent; color: {self.c['sub']};")
+            
+            btn_layout.addWidget(b_title)
+            btn_layout.addWidget(b_sub)
+            
+            # Store references
+            btn.title_lbl = b_title
+            btn.sub_lbl = b_sub
+            
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {self.c['bg']};
+                    border: 1px solid {self.c['border']};
+                    border-radius: 8px;
+                }}
+                QPushButton:checked {{
+                    background-color: {self.c['accent']};
+                    border: 1px solid {self.c['accent']};
+                }}
+            """)
+            
+            self.size_group.addButton(btn)
+            self.size_buttons[size_id] = btn
+            
+            btn.clicked.connect(self.update_size_selection_style)
+            
+            size_container.addWidget(btn)
+            
+        widget_layout.addRow(self.create_label("Size"), size_container)
+        
+        main_layout.addWidget(widget_card)
 
         main_layout.addStretch()
 
@@ -627,7 +1364,7 @@ class SenchadoSettings(QDialog):
         icon_lbl.setFixedSize(80, 80)
         icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        addon_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        addon_root = os.path.dirname(os.path.abspath(__file__))
         img_path = os.path.join(addon_root, "tea_gallery", f"{tea.id}.png")
         
         if os.path.exists(img_path):
@@ -676,14 +1413,12 @@ class SenchadoSettings(QDialog):
         return card
 
     def on_tea_card_clicked(self, tea_id):
-        # Find index in combo box
-        index = self.tea_combo.findData(tea_id)
-        if index >= 0:
-            self.tea_combo.setCurrentIndex(index)
-            # update_tea_selection_visuals will be called by signal
+        # Update selector
+        self.tea_selector.setTea(tea_id)
+        # update_tea_selection_visuals will be called by signal from selector
             
     def update_tea_selection_visuals(self):
-        current_id = self.tea_combo.itemData(self.tea_combo.currentIndex())
+        current_id = self.tea_selector.current_tea_id
         
         for tea_id, card in self.tea_cards.items():
             if tea_id == current_id:
@@ -973,23 +1708,74 @@ class SenchadoSettings(QDialog):
              self.refresh_favorites_list()
         
         progress = manager.get_progress()
-        available = get_available_teas(progress["level"])
-        self.tea_combo.clear()
+        # available = get_available_teas(progress["level"])
+        # self.tea_combo.clear()
         
-        current_idx = 0
-        for i, tea in enumerate(available):
-            self.tea_combo.addItem(tea.name, tea.id)
-            if tea.id == conf["flavor_id"]:
-                current_idx = i
-        self.tea_combo.setCurrentIndex(current_idx)
+        # current_idx = 0
+        # for i, tea in enumerate(available):
+        #     self.tea_combo.addItem(tea.name, tea.id)
+        #     if tea.id == conf["flavor_id"]:
+        #         current_idx = i
+        # self.tea_combo.setCurrentIndex(current_idx)
+        
+        if conf["flavor_id"]:
+            self.tea_selector.setTea(conf["flavor_id"])
+            
+        # Load UI Settings
+        ui_settings = manager.get_ui_settings()
+        
+        # Opacity
+        opacity = ui_settings.get("widget_opacity", 100)
+        if hasattr(self, 'opacity_slider'):
+            self.opacity_slider.setValue(opacity)
+            self.opacity_label.setText(f"{opacity}%")
+            
+        # Glassmorphism
+        glass = ui_settings.get("widget_glass", False)
+        glass_strength = ui_settings.get("widget_glass_strength", 12)
+        
+        if hasattr(self, 'glass_check'):
+            self.glass_check.setChecked(glass)
+            
+        if hasattr(self, 'glass_slider'):
+            self.glass_slider.setValue(glass_strength)
+            self.glass_slider.setEnabled(glass)
+            
+        # Size
+        size = ui_settings.get("widget_size", "big")
+        if hasattr(self, 'size_buttons') and size in self.size_buttons:
+            self.size_buttons[size].setChecked(True)
+            self.update_size_selection_style()
+
+        # Notifications
+        silence = ui_settings.get("silence_notifications", False)
+        if hasattr(self, 'silence_check'):
+            self.silence_check.setChecked(silence)
+
+    def update_size_selection_style(self):
+        for btn in self.size_group.buttons():
+            if btn.isChecked():
+                btn.title_lbl.setStyleSheet("font-weight: 600; border: none; background: transparent; color: " + self.c['btn_txt'] + ";")
+                btn.sub_lbl.setStyleSheet("font-size: 10px; border: none; background: transparent; color: " + self.c['btn_txt'] + ";")
+            else:
+                btn.title_lbl.setStyleSheet("font-weight: 600; border: none; background: transparent; color: " + self.c['fg'] + ";")
+                btn.sub_lbl.setStyleSheet("font-size: 10px; border: none; background: transparent; color: " + self.c['sub'] + ";")
 
     def save_and_close(self):
+        # Validate Task Name
+        task_name = self.task_name_input.text()
+        if len(task_name) >= 15:
+            # Modern validation message
+            dlg = ModernWarningDialog("Task name must be less than 15 characters.", self)
+            dlg.exec()
+            return
+
         # Save Current Tea Config
-        current_flavor = self.tea_combo.itemData(self.tea_combo.currentIndex())
+        current_flavor = self.tea_selector.current_tea_id
         
         manager.set_current_tea(
             flavor_id=current_flavor,
-            task_name=self.task_name_input.text(),
+            task_name=task_name,
             temperature=self.temp_slider.value(),
             prep_time=self.prep_time_spin.value() * 60,
             brew_time=self.brew_time_spin.value() * 60,
@@ -999,6 +1785,24 @@ class SenchadoSettings(QDialog):
         # Save UI Settings
         if hasattr(self, 'selected_pos'):
             manager.set_ui_setting("reviewer_position", self.selected_pos)
+            
+        # Save Tea Room Widget Settings
+        if hasattr(self, 'opacity_slider'):
+            manager.set_ui_setting("widget_opacity", self.opacity_slider.value())
+            manager.set_ui_setting("widget_glass", self.glass_check.isChecked())
+            
+        if hasattr(self, 'glass_slider'):
+            manager.set_ui_setting("widget_glass_strength", self.glass_slider.value())
+            
+        # Find selected size
+        if hasattr(self, 'size_buttons'):
+            for size_id, btn in self.size_buttons.items():
+                if btn.isChecked():
+                    manager.set_ui_setting("widget_size", size_id)
+                    break
+
+        if hasattr(self, 'silence_check'):
+            manager.set_ui_setting("silence_notifications", self.silence_check.isChecked())
             
         tea_timer.stop() # Reset timer to apply new settings
         self.accept()
