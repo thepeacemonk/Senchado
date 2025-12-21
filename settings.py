@@ -1757,7 +1757,7 @@ class SenchadoSettings(QDialog):
             self.favorites_content_layout.addWidget(card)
 
     def save_current_as_favorite(self):
-        flavor_id = self.tea_combo.itemData(self.tea_combo.currentIndex())
+        flavor_id = self.tea_selector.current_tea_id
         config = {
             "flavor_id": flavor_id,
             "task_name": self.task_name_input.text(),
@@ -1780,9 +1780,7 @@ class SenchadoSettings(QDialog):
             self.brew_time_spin.setValue(int(conf["brew_time"] / 60))
             self.cycles_spin.setValue(int(conf.get("cycles", 1)))
             
-            idx = self.tea_combo.findData(conf["flavor_id"])
-            if idx >= 0:
-                self.tea_combo.setCurrentIndex(idx)
+            self.tea_selector.setTea(conf["flavor_id"])
             
             # Persist immediately as current session
             manager.set_current_tea(
