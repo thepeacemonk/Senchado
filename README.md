@@ -1,8 +1,10 @@
-<div align="center">
+<h3 align="center">
   <img src="Senchado.png" alt="Senchado Logo" width="300" />
   <br>
   <br>
-</div>
+  Senchado Tea Timer
+</h3>
+
 
 **Senchadō** is a simple, minimal, modern and gamified tea timer for Anki, allowing you to visualize the time you spend studying, earn XP and unlock teas! 
 
