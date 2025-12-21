@@ -4,7 +4,7 @@
   <br>
 </div>
 
-Senchadō is simple, minimal, modern and gamified tea timer for Anki, allowing you to visualize the time you spend studying, earn XP and unlock teas! 
+**Senchadō** is a simple, minimal, modern and gamified tea timer for Anki, allowing you to visualize the time you spend studying, earn XP and unlock teas! 
 
 Senchadō (煎茶道; "way of sencha") is a Japanese word for the ceremonial preparation of the Sencha (green tea), being an old ritual passed through generations after being popularized by Baisao, the first Senchadō master. Just like preparing tea, studying inolves focus, patience and practice, and this is the feeling I want to bring with Senchadō Timer for Anki, a fun way of understanding and tracking your rhythm while reviewing.
 
@@ -27,6 +27,12 @@ Flexible and minimal tea timer.
 *   **Unlock Teas**: Progress through **100 levels** to unlock over **50 unique tea flavors**, from classic *Sencha* and *Matcha* to rare *Da Hong Pao* and *Gold-coated Tea*.
 
 ## More of Senchadō
+
+<img width="60%" height="auto" alt="New add-on" src="https://github.com/user-attachments/assets/805b620e-dd3b-4d0d-ae35-d0e3feaff2c5" />
+<img width="60%" height="auto" alt="New add-on (2)" src="https://github.com/user-attachments/assets/482af17e-6f4e-40bf-bbd6-cb27a8f001d4" />
+<img width="60%" height="auto" alt="5" src="https://github.com/user-attachments/assets/589ac590-85ff-49e8-8745-1e1fd498784f" />
+<img width="60%" height="auto" alt="6" src="https://github.com/user-attachments/assets/b95566a7-3814-4ef0-b2b7-78b125017b98" />
+
 
 
 
