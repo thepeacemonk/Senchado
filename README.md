@@ -1,5 +1,5 @@
 <h3 align="center">
-  <img width="1068" height="225" alt="Senchado" src="https://github.com/user-attachments/assets/9a49d229-7d53-4d78-ae02-d54e505f5a92" />
+  <img width="360" height="112" alt="Senchado" src="https://github.com/user-attachments/assets/9a49d229-7d53-4d78-ae02-d54e505f5a92" />
   <br>
   <hr>
   <br>
