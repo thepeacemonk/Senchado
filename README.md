@@ -1,8 +1,7 @@
-# Senchadō (Senchado Timer)
-
 <div align="center">
-  <img src="Senchado.png" alt="Senchado Logo" width="200" />
-  <br />
+  <img src="Senchado.png" alt="Senchado Logo" width="300" />
+  <br>
+  <br>
 </div>
 
 Senchadō is a beautiful, immersive tea brewing companion and study timer for Anki. Turn your study sessions into a calming ritual, earn XP, and unlock a vast collection of teas as you progress.
