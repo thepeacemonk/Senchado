@@ -518,7 +518,7 @@ class VersionPopup(QDialog):
         container_layout.setSpacing(15)
         container.setLayout(container_layout)
 
-        label = QLabel("Version 1.0")
+        label = QLabel("Version 1.1")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         label.setStyleSheet(f"""
             color: {text_color};
@@ -1526,13 +1526,31 @@ class SenchadoSettings(QDialog):
         
         sorted_teas = sorted(TEAS.values(), key=lambda t: t.unlock_level)
         
-        for i, tea in enumerate(sorted_teas):
-            row = i // 2
-            col = i % 2
-            
+        current_row = 0
+        current_col = 0
+        
+        for tea in sorted_teas:
             card = self.create_tea_card(tea, progress['level'])
             self.tea_cards[tea.id] = card
-            grid.addWidget(card, row, col)
+            
+            if tea.id == "keemun":
+                # If currently on the second column, move to next row so we can span full width
+                if current_col > 0:
+                    current_row += 1
+                    current_col = 0
+                
+                grid.addWidget(card, current_row, current_col, 1, 2)
+                
+                # Advance to next row after adding a full-width item
+                current_row += 1
+                current_col = 0
+            else:
+                grid.addWidget(card, current_row, current_col)
+                
+                current_col += 1
+                if current_col > 1:
+                    current_col = 0
+                    current_row += 1
             
         # Push content up if few items
         grid.setRowStretch(grid.rowCount(), 1)
