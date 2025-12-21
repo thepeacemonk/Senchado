@@ -26,7 +26,7 @@ Flexible and minimal tea timer.
 *   **Level Up**: Earn XP while reviewing and studying, simple like that: study more, evolve faster.
 *   **Unlock Teas**: Progress through **100 levels** to unlock over **50 unique tea flavors**, from classic *Sencha* and *Matcha* to rare *Da Hong Pao* and *Gold-coated Tea*.
 
-## Configuration
+## More of Senchadō
 
 
 
