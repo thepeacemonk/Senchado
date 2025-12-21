@@ -1,6 +1,7 @@
 <h3 align="center">
   <img src="Senchado.png" alt="Senchado Logo" width="300" />
   <br>
+  <hr>
   <br>
   Senchado Tea Timer
 </h3>
