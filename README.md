@@ -4,50 +4,37 @@
   <br>
 </div>
 
-Senchadō is a beautiful, immersive tea brewing companion and study timer for Anki. Turn your study sessions into a calming ritual, earn XP, and unlock a vast collection of teas as you progress.
+Senchadō is simple, minimal, modern and gamified tea timer for Anki, allowing you to visualize the time you spend studying, earn XP and unlock teas! 
+
+Senchadō (煎茶道; "way of sencha") is a Japanese word for the ceremonial preparation of the Sencha (green tea), being an old ritual passed through generations after being popularized by Baisao, the first Senchadō master. Just like preparing tea, studying inolves focus, patience and practice, and this is the feeling I want to bring with Senchadō Timer for Anki, a fun way of understanding and tracking your rhythm while reviewing.
 
 ## Features
 
-### Tea Room Dashboard
-Your personal sanctuary within Anki.
-*   **Design**: A stunning UI featuring **Glassmorphism**, adjustable **Opacity**, and varying **Widget Sizes** (Small, Medium, Big) to fit your aesthetic.
-*   **Adaptive Theme**: Seamlessly switches between a light "Natural" palette and a dark "Zen" palette based on your Anki system settings.
-*   **Gallery**: View your unlocked teas and your current level progress.
+### Tea House
+The main menu to set your Senchadō workflow.
+- **Brewing Configurations**: Configure **Preparation** (Study), **Brewing** (Break), and number of **Cycles**.
+- **Customize main menu and reviewer widgets**: Customize the main menu widget, position of timer on reviewer, turn sound notifications on and off, and more.
+- **Check your progress**: Check your level progress, teas available, and past tea brewing sessions (30 days).
 
-### Tea Timer & Study Tool
-Flexible timer that adapts to your workflow.
-*   **Cycles**: Configure **Preparation** (Study), **Brewing** (Break), and number of **Cycles**.
+### Tea Timer on Reviewer
+Flexible and minimal tea timer.
+*   **Cycles**: Check **Preparation** (Study), **Brewing** (Break), number of **Cycles**, and other useful information (can be minimized).
 *   **Smart Timer**: Runs in the background and notifies you when your session is complete.
 *   **Sounds**: Gentle notification sounds for timer completion (can be silenced in settings).
 
-### Reviewer Companion
-Keep your focus without losing track of time.
-*   **Overlay Widget**: A non-intrusive widget that floats over your Review screen.
-*   **Minimizable**: Toggle between a full-info card and a compact pill view.
-*   **Positionable**: Place it in any corner of the screen (Top-Right, Bottom-Left, etc.).
-
 ### Gamification
-*   **Level Up**: Earn **XP** for every minute you study (prepare/brew).
+*   **Level Up**: Earn XP while reviewing and studying, simple like that: study more, evolve faster.
 *   **Unlock Teas**: Progress through **100 levels** to unlock over **50 unique tea flavors**, from classic *Sencha* and *Matcha* to rare *Da Hong Pao* and *Gold-coated Tea*.
-*   **Stats**: Track your total brews and current level directly on the dashboard.
-
-### History & Favorites
-*   **Tea History**: Automatically records every session with date, tea type, and duration.
-*   **Favorites**: Save your perfect brewing/study presets for one-click access.
 
 ## Configuration
 
-Senchadō offers deep customization options:
-*   **Widget Style**: Toggle Glass effect, adjust Blur strength, and set Opacity.
-*   **Widget Size**: Choose how much space the dashboard takes (Small/Medium/Big).
-*   **Overlay Position**: customized where the timer appears during reviews.
-*   **Notifications**: Toggle sound or visual alerts.
 
 
 ## 🤝 Support
 
 If you enjoy using Senchadō, you can support development by buying me a tea!
 
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-green.png" alt="Buy Me A Tea" width="150" />](https://buymeacoffee.com/peacemonk)
+
+[<img width="380" height="80" alt="Buy me a tea" src="https://github.com/user-attachments/assets/748d749e-ca20-4f27-8f1b-6410c2027a44" />](https://buymeacoffee.com/peacemonk)
 
 Bug reports and feature requests are welcome on [GitHub](https://github.com/thepeacemonk/Komori).
