@@ -295,7 +295,7 @@ class ReviewerOverlay:
         tea_b64 = self.get_tea_image_b64(tea.id)
         tea_img_elem = ""
         if tea_b64:
-             tea_img_elem = f'<img src="data:image/png;base64,{tea_b64}" style="width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; border-radius: 8px;">'
+             tea_img_elem = f'<img src="data:image/png;base64,{tea_b64}" style="width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; border-radius: 8px; filter: none !important;">'
         
         # Logic for content based on Minimized state
         if self.minimized:
