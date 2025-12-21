@@ -15,7 +15,8 @@ class ReviewerOverlay:
 
     def __init__(self):
         self.active = False
-        self.minimized = False  # New state
+        # Initialize minimized state from settings
+        self.minimized = manager.get_ui_settings().get("reviewer_minimal_mode_default", False)
         self.notified_milestones = set()
         self.current_notification = None
         
@@ -87,6 +88,15 @@ class ReviewerOverlay:
         }
         pos_css = pos_rules.get(position, pos_rules["top-right"])
 
+        # Opacity & Blur
+        ui_settings = manager.get_ui_settings()
+        opacity = ui_settings.get("reviewer_opacity", 100) / 100.0
+        blur = ui_settings.get("reviewer_blur", 0)
+        
+        # Convert bg to rgba
+        c = QColor(colors['bg'])
+        bg_rgba = f"rgba({c.red()}, {c.green()}, {c.blue()}, {opacity})"
+
         # CSS Block
         css = f"""
             :host {{
@@ -96,7 +106,7 @@ class ReviewerOverlay:
                 {pos_css}
             }}
             .senchado-container {{
-                background: {colors['bg']};
+                background: {bg_rgba};
                 border-radius: 16px;
                 box-shadow: 0 4px 12px {colors['shadow']};
                 padding: 16px;
@@ -106,7 +116,7 @@ class ReviewerOverlay:
                 gap: 10px;
                 border: 1px solid {colors['border']};
                 transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                backdrop-filter: blur(10px);
+                backdrop-filter: blur({blur}px);
                 width: 240px;
                 box-sizing: border-box;
                 color: {colors['text']};
@@ -183,6 +193,10 @@ class ReviewerOverlay:
         return css, colors
 
     def on_show_question(self, card):
+        # If we are starting a new reviewer session (active was False), apply default
+        if not self.active:
+            self.minimized = manager.get_ui_settings().get("reviewer_minimal_mode_default", False)
+            
         self.active = True
         if tea_timer.state == TimerState.IDLE:
              tea_timer.start_preparation()

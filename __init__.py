@@ -15,7 +15,7 @@ def show_settings():
     # showInfo("Senchadō Settings - Coming Soon!\nCurrent Level: " + str(manager.get_progress()["level"]))
 
 def setup_menu():
-    action = QAction("Senchado", mw)
+    action = QAction("Senchado - Tea House", mw)
     action.triggered.connect(show_settings)
     mw.form.menuTools.addAction(action)
 

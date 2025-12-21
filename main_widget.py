@@ -53,7 +53,7 @@ def generate_widget_html():
     ui_settings = manager.get_ui_settings()
     opacity = ui_settings.get("widget_opacity", 100) / 100.0
     glass = ui_settings.get("widget_glass", False)
-    glass_strength = ui_settings.get("widget_glass_strength", 12)
+    glass_strength = ui_settings.get("widget_glass_strength", 0)
     size = ui_settings.get("widget_size", "big")
     
     next_level_xp = progress["level"] * 100

@@ -1,7 +1,5 @@
 {
     "name": "Senchado",
-    "package": "komori_timer",
-    "min_point_version": 45,
-    "max_point_version": 45,
+    "package": "senchado_timer",
     "human_version": "1.0.0"
 }

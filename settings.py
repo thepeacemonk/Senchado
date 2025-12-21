@@ -475,6 +475,100 @@ class TeaSelector(QFrame):
             if menu.selected_tea_id and menu.selected_tea_id != self.current_tea_id:
                 self.setTea(menu.selected_tea_id)
 
+
+class VersionPopup(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+        # Theme colors
+        if theme_manager.night_mode:
+            bg_color = "#1A1C19"
+            text_color = "#E1E6DF"
+            border_color = "#3A3F39"
+            btn_bg = "#252925"
+            btn_txt = "#FFFFFF"
+            btn_hover = "#3A3F39"
+        else:
+            bg_color = "#FAFAF5"
+            text_color = "#2C3E2D"
+            border_color = "#D8DED0"
+            btn_bg = "#3F6D49"
+            btn_txt = "#FFFFFF"
+            btn_hover = "#4A7E54"
+
+        container = QFrame()
+        container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 12px;
+            }}
+        """)
+        
+        container_layout = QVBoxLayout()
+        container_layout.setContentsMargins(20, 15, 20, 15)
+        container_layout.setSpacing(15)
+        container.setLayout(container_layout)
+
+        label = QLabel("Version 1.0")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setStyleSheet(f"""
+            color: {text_color};
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+        """)
+        
+        container_layout.addWidget(label)
+        
+        # Close Button
+        close_btn = QPushButton("Close")
+        close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        close_btn.setFixedSize(80, 30)
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {btn_txt};
+                border-radius: 15px;
+                font-weight: 600;
+                font-size: 12px;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """)
+        close_btn.clicked.connect(self.accept)
+        
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        btn_layout.addWidget(close_btn)
+        btn_layout.addStretch()
+        container_layout.addLayout(btn_layout)
+
+        layout.addWidget(container)
+
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()):
+            self.clicked.emit()
+        super().mouseReleaseEvent(event)
+
 class SenchadoSettings(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -533,15 +627,16 @@ class SenchadoSettings(QDialog):
         buy_tea_btn.clicked.connect(lambda: webbrowser.open("https://buymeacoffee.com/peacemonk"))
         
         # Logo
-        logo_label = QLabel()
+        self.logo_label = ClickableLabel()
         addon_root = os.path.dirname(os.path.abspath(__file__))
         logo_filename = "Senchado_night.png" if theme_manager.night_mode else "Senchado.png"
         logo_path = os.path.join(addon_root, logo_filename)
         if os.path.exists(logo_path):
             logo_pixmap = QPixmap(logo_path)
             logo_pixmap = logo_pixmap.scaled(160, 160, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            logo_label.setPixmap(logo_pixmap)
-        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.logo_label.setPixmap(logo_pixmap)
+        self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.logo_label.clicked.connect(self.show_version_popup)
         
         # Right Button - Report bug
         report_btn = QPushButton("Report bug")
@@ -567,7 +662,7 @@ class SenchadoSettings(QDialog):
         
         logo_row.addStretch()
         logo_row.addWidget(buy_tea_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
-        logo_row.addWidget(logo_label)
+        logo_row.addWidget(self.logo_label)
         logo_row.addWidget(report_btn, alignment=Qt.AlignmentFlag.AlignVCenter)
         logo_row.addStretch()
         
@@ -609,6 +704,36 @@ class SenchadoSettings(QDialog):
         self.tea_selector.teaSelected.connect(self.update_tea_selection_visuals)
         # Initial visual update
         self.update_tea_selection_visuals()
+
+
+    def show_version_popup(self):
+        popup = VersionPopup(self)
+        
+        # Calculate position relative to logo
+        # Map logo position to global coordinates
+        logo_pos = self.logo_label.mapToGlobal(QPoint(0, 0))
+        logo_width = self.logo_label.width()
+        logo_height = self.logo_label.height()
+        
+        popup_width = popup.width() # This might be small if not shown yet, verify size hint
+        # Force a size hint calculation or set fixed size in popup if needed, 
+        # but let's assume popup has a reasonable size or we set it.
+        # VersionPopup uses layout, let's hint it.
+        popup.adjustSize()
+        popup_width = popup.width()
+        popup_height = popup.height()
+        
+        # Center horizontally: logo_x + (logo_w - popup_w) / 2
+        center_x = logo_pos.x() + (logo_width - popup_width) // 2
+        
+        # Position below logo or centered vertically over it? 
+        # "Aligned with the logo" usually means centered.
+        # Let's simple center it over the logo for now as that's safe for "pop-up".
+        # Or maybe slightly below center?
+        center_y = logo_pos.y() + (logo_height - popup_height) // 2
+        
+        popup.move(center_x, center_y)
+        popup.exec()
 
     def get_theme_colors(self):
         # Helper to get colors for child widgets before setup_styles runs/or if needed
@@ -935,6 +1060,97 @@ class SenchadoSettings(QDialog):
         pos_card_layout.setSpacing(20)
         pos_card.setLayout(pos_card_layout)
         
+        # Opacity
+        self.reviewer_opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self.reviewer_opacity_slider.setRange(0, 100)
+        self.reviewer_opacity_slider.setValue(100)
+        self.reviewer_opacity_slider.valueChanged.connect(self.update_reviewer_opacity_label)
+        
+        # Consistent Modern Style
+        slider_qss = f"""
+            QSlider::groove:horizontal {{
+                border: 1px solid {self.c['border']};
+                height: 6px;
+                background: {self.c['border']};
+                margin: 2px 0;
+                border-radius: 3px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {self.c['accent']};
+                border: 1px solid {self.c['accent']};
+                width: 16px;
+                height: 16px;
+                margin: -6px 0;
+                border-radius: 8px;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {self.c['accent_hover']};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {self.c['accent']};
+                border-radius: 3px;
+            }}
+        """
+        self.reviewer_opacity_slider.setStyleSheet(slider_qss)
+        
+        self.reviewer_opacity_label = QLabel("100%")
+        self.reviewer_opacity_label.setFixedWidth(40)
+        self.reviewer_opacity_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        
+        row_opacity = QHBoxLayout()
+        row_opacity.addWidget(QLabel("Opacity"))
+        row_opacity.addWidget(self.reviewer_opacity_slider)
+        row_opacity.addWidget(self.reviewer_opacity_label)
+        pos_card_layout.addLayout(row_opacity)
+
+        # Glassmorphism (Blur)
+        self.reviewer_blur_slider = QSlider(Qt.Orientation.Horizontal)
+        self.reviewer_blur_slider.setRange(0, 20)
+        self.reviewer_blur_slider.setValue(0)
+        self.reviewer_blur_slider.valueChanged.connect(self.update_reviewer_blur_label)
+        
+        self.reviewer_blur_slider.setStyleSheet(slider_qss)
+        
+        self.reviewer_blur_label = QLabel("0px")
+        self.reviewer_blur_label.setFixedWidth(40)
+        self.reviewer_blur_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        
+        row_blur = QHBoxLayout()
+        row_blur.addWidget(QLabel("Blur"))
+        row_blur.addWidget(self.reviewer_blur_slider)
+        row_blur.addWidget(self.reviewer_blur_label)
+        pos_card_layout.addLayout(row_blur)
+        
+        # Minimal Mode Default
+        self.reviewer_minimal_check = QCheckBox("Minimal mode as default")
+        self.reviewer_minimal_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.reviewer_minimal_check.setStyleSheet(f"""
+            QCheckBox {{
+                font-weight: 500;
+                color: {self.c['fg']};
+                margin-top: 10px;
+            }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid {self.c['border']};
+                background: {self.c['card']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self.c['accent']};
+                border: 1px solid {self.c['accent']};
+            }}
+        """)
+        pos_card_layout.addWidget(self.reviewer_minimal_check)
+        
+        # Separator
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        sep.setStyleSheet(f"background-color: {self.c.get('border', '#ccc')}; max-height: 1px; border: none;")
+        pos_card_layout.addWidget(sep)
+        
         pos_lbl = self.create_label("Review Screen Widget Position")
         pos_card_layout.addWidget(pos_lbl)
         
@@ -1101,29 +1317,8 @@ class SenchadoSettings(QDialog):
         
         widget_layout.addRow(self.create_label("Opacity"), opacity_container)
 
-        # 2. Glassmorphism
-        self.glass_check = QCheckBox("Enable Glassmorphism Effect")
-        self.glass_check.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.glass_check.setStyleSheet(f"""
-            QCheckBox {{
-                font-weight: 500;
-                color: {self.c['fg']};
-            }}
-            QCheckBox::indicator {{
-                width: 18px;
-                height: 18px;
-                border-radius: 4px;
-                border: 1px solid {self.c['border']};
-                background: {self.c['card']};
-            }}
-            QCheckBox::indicator:checked {{
-                background-color: {self.c['accent']};
-                border: 1px solid {self.c['accent']};
-            }}
-        """)
-        widget_layout.addRow(self.create_label("Glassmorphism"), self.glass_check)
-        
-        # 2b. Glass Intensity
+        # 2. Blur (Glassmorphism)
+        # Checkbox removed, slider controls everything (0 = off)
         self.glass_slider = QSlider(Qt.Orientation.Horizontal)
         self.glass_slider.setRange(0, 20) # Blur radius 0-20px
         self.glass_slider.setSingleStep(1)
@@ -1133,17 +1328,14 @@ class SenchadoSettings(QDialog):
         
         glass_container = QHBoxLayout()
         glass_container.addWidget(self.glass_slider)
-        self.glass_label = QLabel("12px")
+        self.glass_label = QLabel("0px")
         self.glass_label.setFixedWidth(40)
         self.glass_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         glass_container.addWidget(self.glass_label)
         
         self.glass_slider.valueChanged.connect(lambda v: self.glass_label.setText(f"{v}px"))
         
-        # Only enable slider if glass is checked
-        self.glass_check.toggled.connect(self.glass_slider.setEnabled)
-        
-        widget_layout.addRow(self.create_label("Glass Strength"), glass_container)
+        widget_layout.addRow(self.create_label("Blur"), glass_container)
 
         # 3. Size
         size_container = QHBoxLayout()
@@ -1731,15 +1923,12 @@ class SenchadoSettings(QDialog):
             self.opacity_label.setText(f"{opacity}%")
             
         # Glassmorphism
-        glass = ui_settings.get("widget_glass", False)
-        glass_strength = ui_settings.get("widget_glass_strength", 12)
-        
-        if hasattr(self, 'glass_check'):
-            self.glass_check.setChecked(glass)
+        # glass = ui_settings.get("widget_glass", False) # Legacy read, not needed for UI state
+        glass_strength = ui_settings.get("widget_glass_strength", 0)
             
         if hasattr(self, 'glass_slider'):
             self.glass_slider.setValue(glass_strength)
-            self.glass_slider.setEnabled(glass)
+            # self.glass_slider.setEnabled(glass) # Always enabled now
             
         # Size
         size = ui_settings.get("widget_size", "big")
@@ -1751,6 +1940,23 @@ class SenchadoSettings(QDialog):
         silence = ui_settings.get("silence_notifications", False)
         if hasattr(self, 'silence_check'):
             self.silence_check.setChecked(silence)
+            
+        # Reviewer Overlay Settings
+        rev_opacity = ui_settings.get("reviewer_opacity", 100)
+        rev_blur = ui_settings.get("reviewer_blur", 0)
+        
+        if hasattr(self, 'reviewer_opacity_slider'):
+            self.reviewer_opacity_slider.setValue(rev_opacity)
+            self.update_reviewer_opacity_label(rev_opacity)
+            
+        if hasattr(self, 'reviewer_blur_slider'):
+            self.reviewer_blur_slider.setValue(rev_blur)
+            self.update_reviewer_blur_label(rev_blur)
+
+        # Minimal Mode Default
+        rev_minimal = ui_settings.get("reviewer_minimal_mode_default", False)
+        if hasattr(self, 'reviewer_minimal_check'):
+            self.reviewer_minimal_check.setChecked(rev_minimal)
 
     def update_size_selection_style(self):
         for btn in self.size_group.buttons():
@@ -1786,13 +1992,24 @@ class SenchadoSettings(QDialog):
         if hasattr(self, 'selected_pos'):
             manager.set_ui_setting("reviewer_position", self.selected_pos)
             
-        # Save Tea Room Widget Settings
+        # Save Tea Room Widget Settings (Legacy/Main Menu)
         if hasattr(self, 'opacity_slider'):
             manager.set_ui_setting("widget_opacity", self.opacity_slider.value())
-            manager.set_ui_setting("widget_glass", self.glass_check.isChecked())
             
         if hasattr(self, 'glass_slider'):
-            manager.set_ui_setting("widget_glass_strength", self.glass_slider.value())
+            strength = self.glass_slider.value()
+            manager.set_ui_setting("widget_glass_strength", strength)
+            manager.set_ui_setting("widget_glass", strength > 0)
+            
+        # Save Reviewer Overlay Settings
+        if hasattr(self, 'reviewer_opacity_slider'):
+            manager.set_ui_setting("reviewer_opacity", self.reviewer_opacity_slider.value())
+            
+        if hasattr(self, 'reviewer_blur_slider'):
+            manager.set_ui_setting("reviewer_blur", self.reviewer_blur_slider.value())
+
+        if hasattr(self, 'reviewer_minimal_check'):
+            manager.set_ui_setting("reviewer_minimal_mode_default", self.reviewer_minimal_check.isChecked())
             
         # Find selected size
         if hasattr(self, 'size_buttons'):
@@ -1806,3 +2023,9 @@ class SenchadoSettings(QDialog):
             
         tea_timer.stop() # Reset timer to apply new settings
         self.accept()
+
+    def update_reviewer_opacity_label(self, value):
+        self.reviewer_opacity_label.setText(f"{value}%")
+        
+    def update_reviewer_blur_label(self, value):
+        self.reviewer_blur_label.setText(f"{value}px")

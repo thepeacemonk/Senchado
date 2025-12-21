@@ -24,7 +24,13 @@ DEFAULT_CONFIG = {
     "favorites": [],
     "ui_settings": {
         "reviewer_position": "top-right", # Options: top-left, top-right, bottom-left, bottom-right
-        "silence_notifications": False
+        "silence_notifications": False,
+        "widget_opacity": 100,
+        "widget_glass": False,
+        "widget_glass_strength": 0,
+        "reviewer_opacity": 100,
+        "reviewer_blur": 0,
+        "reviewer_minimal_mode_default": False
     }
 }
 
@@ -81,6 +87,13 @@ class ConfigManager:
         self.config = deepcopy(DEFAULT_CONFIG)
         self.config.update(anki_config) # Priorities keys from Anki config
         self.config.update(history_data) # Priorities keys from history file (overwrites defaults)
+
+        # Self-correction: Ensure total_brews is at least as large as the known history
+        # This fixes issues where the counter got out of sync
+        history_cnt = len(self.config.get("tea_history", []))
+        if self.config["user_progress"]["total_brews"] < history_cnt:
+            self.config["user_progress"]["total_brews"] = history_cnt
+            self.save() # Persist the correction
 
     def _load_history_file(self):
         data = {
