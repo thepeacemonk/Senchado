@@ -33,7 +33,7 @@ Flexible and minimal tea timer.
 
 <img width="60%" height="auto" alt="New add-on" src="https://github.com/user-attachments/assets/805b620e-dd3b-4d0d-ae35-d0e3feaff2c5" />
 <img width="60%" height="auto" alt="New add-on (2)" src="https://github.com/user-attachments/assets/482af17e-6f4e-40bf-bbd6-cb27a8f001d4" />
-<img width="60%" height="auto" alt="5" src="https://github.com/user-attachments/assets/589ac590-85ff-49e8-8745-1e1fd498784f" />
+<img width="60%" height="auto" alt="Announcement" src="https://github.com/user-attachments/assets/917ce01e-d7a2-4405-85c2-f35c4652c6d6" />
 <img width="60%" height="auto" alt="6" src="https://github.com/user-attachments/assets/b95566a7-3814-4ef0-b2b7-78b125017b98" />
 
 
