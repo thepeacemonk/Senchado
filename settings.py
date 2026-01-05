@@ -908,6 +908,36 @@ class SenchadoSettings(QDialog):
             QPushButton:hover {{
                 background-color: {self.c['accent_hover']};
             }}
+            /* Support button - MUST be pill-shaped at all times */
+            QPushButton#support_btn {{
+                background-color: {self.c['bg']};
+                color: {self.c['fg']};
+                border: 1px solid {self.c['border']};
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 13px;
+                padding-left: 10px;
+                padding-right: 10px;
+            }}
+            QPushButton#support_btn:hover {{
+                border: 1px solid {self.c['accent']};
+                border-radius: 20px;
+                color: {self.c['accent']};
+                background-color: {self.c['card']};
+            }}
+            QPushButton#support_btn:pressed {{
+                border: 1px solid {self.c['accent']};
+                border-radius: 20px;
+                color: {self.c['accent']};
+                background-color: {self.c['bg']};
+            }}
+            QPushButton#support_btn:focus {{
+                border: 1px solid {self.c['accent']};
+                border-radius: 20px;
+            }}
+            QPushButton#support_btn:disabled {{
+                border-radius: 20px;
+            }}
             /* Specific fix for standard buttons in button box if needed */
             QDialogButtonBox QPushButton {{
                 min-width: 60px;
@@ -1552,6 +1582,70 @@ class SenchadoSettings(QDialog):
                     current_col = 0
                     current_row += 1
             
+        # Ensure we start on a new row for the footer
+        if current_col > 0:
+            current_row += 1
+            
+        # Coming Soon / Support Hero
+        coming_soon = QFrame()
+        coming_soon.setProperty("class", "tea-card")
+        
+        cs_layout = QVBoxLayout()
+        cs_layout.setContentsMargins(24, 30, 24, 30)
+        cs_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        coming_soon.setLayout(cs_layout)
+        
+        cs_lbl = QLabel("More tea flavors coming soon!")
+        cs_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        cs_lbl.setStyleSheet(f"color: {self.c['sub']}; font-size: 15px; font-weight: 600;")
+        cs_layout.addWidget(cs_lbl)
+        
+        cs_layout.addSpacing(12)
+        
+        # Using QFrame instead of QPushButton to bypass all button styling conflicts
+        buy_btn = QFrame()
+        buy_btn.setObjectName("support_btn")
+        buy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        buy_btn.setFixedWidth(200)
+        buy_btn.setFixedHeight(40)
+        buy_btn.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        buy_btn.setStyleSheet(f"""
+            QFrame#support_btn {{
+                background-color: {self.c['bg']};
+                border: 1px solid {self.c['border']};
+                border-radius: 20px;
+            }}
+            QFrame#support_btn:hover {{
+                border: 1px solid {self.c['accent']};
+                background-color: {self.c['card']};
+            }}
+        """)
+        
+        # Add label for text
+        btn_layout = QHBoxLayout(buy_btn)
+        btn_layout.setContentsMargins(0, 0, 0, 0)
+        btn_label = QLabel("Support Senchadō")
+        btn_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn_label.setStyleSheet(f"""
+            QLabel {{
+                color: {self.c['fg']};
+                font-weight: 600;
+                font-size: 13px;
+                background: transparent;
+                border: none;
+            }}
+        """)
+        btn_layout.addWidget(btn_label)
+        
+        # Make clickable (must not return value to avoid sipBadCatcherResult error)
+        def on_support_click(event):
+            webbrowser.open("https://buymeacoffee.com/peacemonk")
+        buy_btn.mousePressEvent = on_support_click
+        cs_layout.addWidget(buy_btn)
+        
+        # Add to grid, spanning full width (2 columns)
+        grid.addWidget(coming_soon, current_row, 0, 1, 2)
+
         # Push content up if few items
         grid.setRowStretch(grid.rowCount(), 1)
         

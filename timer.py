@@ -37,6 +37,10 @@ class SenchadoTimer(QObject):
     def start_preparation(self, new_session=True):
         config = manager.get_current_tea()
         if new_session:
+            # Fix: If there is pending XP from a previous incomplete session (e.g. restart without closing reviewer), award it now.
+            if self.pending_xp > 0:
+                self.commit_xp()
+                
             self.cycles_total = config.get("cycles", 1)
             self.cycles_current = 1
             self.pending_xp = 0

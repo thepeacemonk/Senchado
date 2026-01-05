@@ -283,6 +283,14 @@ class ReviewerOverlay:
              toggle_icon = self.load_icon("minimize.svg", size=16)
              toggle_title = "Minimize"
 
+        # Play/Pause Icon
+        if tea_timer.state == TimerState.PAUSED:
+            pause_icon = self.load_icon("play.svg", size=16)
+            pause_title = "Resume"
+        else:
+            pause_icon = self.load_icon("pause.svg", size=16)
+            pause_title = "Pause"
+
         # Colors: Using theme 'accent' for bar, not tea color
         bar_color_start = colors['accent']
         bar_color_end = colors['accent_hover']
@@ -345,6 +353,9 @@ class ReviewerOverlay:
                   <!-- Minimize Button -->
                   <button onclick="pycmd('senchado:toggle_minimize')" title="{toggle_title}" class="toggle-btn toggle-abs">{toggle_icon}</button>
                   
+                  <!-- Pause Button - Positioned below minimize -->
+                  <button onclick="pycmd('senchado:toggle_pause')" title="{pause_title}" class="toggle-btn toggle-abs" style="top: 32px;">{pause_icon}</button>
+
                   <!-- Header -->
                   <div style="text-align: center; margin-bottom: 6px; margin-top: 4px;">
                       <div id="senchado-task" style="font-size: 13px; font-weight: 700; color: {colors['sub']}; margin-bottom: 2px;">{config['task_name']}</div>
@@ -464,6 +475,15 @@ class ReviewerOverlay:
             return (True, None)
         elif message == "senchado:toggle_minimize":
             self.minimized = not self.minimized
+            self.update_ui(tea_timer.current_time, tea_timer.total_time, tea_timer.state.name, initial=True)
+            return (True, None)
+        elif message == "senchado:toggle_pause":
+            if tea_timer.state == TimerState.PAUSED:
+                tea_timer.resume()
+            else:
+                tea_timer.pause()
+            
+            # Force update to change icon
             self.update_ui(tea_timer.current_time, tea_timer.total_time, tea_timer.state.name, initial=True)
             return (True, None)
         return handled

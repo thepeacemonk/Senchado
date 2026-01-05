@@ -37,8 +37,15 @@ DEFAULT_CONFIG = {
 class ConfigManager:
     def __init__(self):
         self.config = {}
-        # Path to tea_history.json in the addon root directory
-        self.tea_history_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tea_history.json")
+        # Path to user_files folder and tea_history.json inside it
+        addon_dir = os.path.dirname(os.path.abspath(__file__))
+        user_files_dir = os.path.join(addon_dir, "user_files")
+        
+        # Create user_files folder if it doesn't exist
+        if not os.path.exists(user_files_dir):
+            os.makedirs(user_files_dir)
+        
+        self.tea_history_path = os.path.join(user_files_dir, "tea_history.json")
         self.load()
 
     def load(self):
