@@ -55,8 +55,8 @@ def generate_widget_html():
     glass = ui_settings.get("widget_glass", False)
     glass_strength = ui_settings.get("widget_glass_strength", 0)
     size = ui_settings.get("widget_size", "big")
-    padding = ui_settings.get("widget_padding", "20")
-    margin = ui_settings.get("widget_margin", "20")
+    padding = ui_settings.get("padding", "20")
+    margin = ui_settings.get("margin", "20")
     
     next_level_xp = progress["level"] * 100
     xp_percent = (progress["xp"] / next_level_xp) * 100 if next_level_xp > 0 else 0
@@ -113,8 +113,8 @@ def generate_widget_html():
     .senchado-widget {{
         background: {bg_color};
         color: {text_color};
-        padding: {f"{padding}px"};
-        margin: {f"{margin}px"} auto;
+        padding: {padding};
+        margin: {margin} auto;
         border-radius: 24px;
         width: {dim};
         height: {dim};

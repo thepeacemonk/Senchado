@@ -2086,7 +2086,7 @@ class SenchadoSettings(QDialog):
         margin = ui_settings.get("margin", "20px")
         if hasattr(self, 'margin_slider'):
             self.margin_slider.setValue(int(margin[:-2]))  # also hacky and should be okay
-            self.margin_label.setText(f"{padding}")
+            self.margin_label.setText(f"{margin}")
 
         # Size
         size = ui_settings.get("widget_size", "big")
