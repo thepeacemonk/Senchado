@@ -111,8 +111,8 @@ def generate_widget_html():
     .senchado-widget {{
         background: {bg_color};
         color: {text_color};
-        padding: 20px;
-        margin: 20px auto;
+        padding: 0px;
+        margin: 0px auto;
         border-radius: 24px;
         width: {dim};
         height: {dim};
