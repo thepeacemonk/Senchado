@@ -30,7 +30,9 @@ DEFAULT_CONFIG = {
         "widget_glass_strength": 0,
         "reviewer_opacity": 100,
         "reviewer_blur": 0,
-        "reviewer_minimal_mode_default": False
+        "reviewer_minimal_mode_default": False,
+        "padding": "20px",
+        "margin": "20px"
     }
 }
 

@@ -1367,7 +1367,43 @@ class SenchadoSettings(QDialog):
         
         widget_layout.addRow(self.create_label("Blur"), glass_container)
 
-        # 3. Size
+        # Padding Slider
+        self.padding_slider = QSlider(Qt.Orientation.Horizontal)
+        self.padding_slider.setRange(0, 20) # Padding size 0-20px
+        self.padding_slider.setSingleStep(1)
+
+        # Reusing opacity slider style (again)
+        self.padding_slider.setStyleSheet(self.opacity_slider.styleSheet())
+        padding_container = QHBoxLayout()
+        padding_container.addWidget(self.padding_slider)
+        self.padding_label = QLabel("0px")
+        self.padding_label.setFixedWidth(40)
+        self.padding_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        padding_container.addWidget(self.padding_label)
+
+        self.padding_slider.valueChanged.connect(lambda v: self.padding_label.setText(f"{v}px"))
+
+        widget_layout.addRow(self.create_label("Padding"), padding_container)
+
+        # Margin Slider
+        self.margin_slider = QSlider(Qt.Orientation.Horizontal)
+        self.margin_slider.setRange(0, 20) # Margin size 0-20px
+        self.margin_slider.setSingleStep(1)
+
+        # Reusing opacity slider style (again again)
+        self.margin_slider.setStyleSheet(self.opacity_slider.styleSheet())
+        margin_container = QHBoxLayout()
+        margin_container.addWidget(self.margin_slider)
+        self.margin_label = QLabel("0px")
+        self.margin_label.setFixedWidth(40)
+        self.margin_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        margin_container.addWidget(self.margin_label)
+
+        self.margin_slider.valueChanged.connect(lambda v: self.margin_label.setText(f"{v}px"))
+
+        widget_layout.addRow(self.create_label("Margin"), margin_container)
+
+        # Sizes
         size_container = QHBoxLayout()
         size_container.setSpacing(15)
         
@@ -2039,7 +2075,19 @@ class SenchadoSettings(QDialog):
         if hasattr(self, 'glass_slider'):
             self.glass_slider.setValue(glass_strength)
             # self.glass_slider.setEnabled(glass) # Always enabled now
-            
+        
+        # Padding
+        padding = ui_settings.get("padding", "20px")
+        if hasattr(self, 'padding_slider'):
+            self.padding_slider.setValue(int(padding[:-2]))  # this sucks but it's hacky and okay
+            self.padding_label.setText(f"{padding}")
+
+        # Margin
+        margin = ui_settings.get("margin", "20px")
+        if hasattr(self, 'margin_slider'):
+            self.margin_slider.setValue(int(margin[:-2]))  # also hacky and should be okay
+            self.margin_label.setText(f"{padding}")
+
         # Size
         size = ui_settings.get("widget_size", "big")
         if hasattr(self, 'size_buttons') and size in self.size_buttons:
@@ -2111,6 +2159,14 @@ class SenchadoSettings(QDialog):
             manager.set_ui_setting("widget_glass_strength", strength)
             manager.set_ui_setting("widget_glass", strength > 0)
             
+        
+        if hasattr(self, 'padding_slider'):
+            manager.set_ui_setting("padding", f"{self.padding_slider.value()}px")
+        
+        if hasattr(self, 'margin_slider'):
+            manager.set_ui_setting("margin", f"{self.margin_slider.value()}px")
+
+
         # Save Reviewer Overlay Settings
         if hasattr(self, 'reviewer_opacity_slider'):
             manager.set_ui_setting("reviewer_opacity", self.reviewer_opacity_slider.value())
