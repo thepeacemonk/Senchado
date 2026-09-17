@@ -247,7 +247,7 @@ class ReviewerOverlay:
         self.notified_milestones.clear()
         self.current_notification = None
         if new_state == "DONE":
-            self.trigger_notification("Tea is raedy")
+            self.trigger_notification("Tea is ready")
             
         if self.active:
             self.update_ui(tea_timer.current_time, tea_timer.total_time, new_state)
