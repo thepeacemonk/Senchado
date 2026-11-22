@@ -33,9 +33,12 @@ class SenchadoTimer(QObject):
         self.pending_xp = 0
         self.cycles_total = 1
         self.cycles_current = 0
+        self.run_outside_reviewer = False
 
-    def start_preparation(self, new_session=True):
+    def start_preparation(self, new_session=True, outside_reviewer=None):
         config = manager.get_current_tea()
+        if outside_reviewer is not None:
+            self.run_outside_reviewer = bool(outside_reviewer)
         if new_session:
             # Fix: If there is pending XP from a previous incomplete session (e.g. restart without closing reviewer), award it now.
             if self.pending_xp > 0:
@@ -79,7 +82,10 @@ class SenchadoTimer(QObject):
         sound_path = os.path.join(addon_dir, "notification_sounds", filename)
         
         if os.path.exists(sound_path):
-            av_player.play_file(sound_path)
+            try:
+                av_player.play_file(sound_path)
+            except Exception:
+                pass
 
     def _on_phase_complete(self):
         self.timer.stop()
@@ -99,10 +105,10 @@ class SenchadoTimer(QObject):
                 self.start_preparation(new_session=False)
             else:
                 self.state = TimerState.DONE
+                if self.run_outside_reviewer:
+                    self.run_outside_reviewer = False
+                    self.commit_xp()
                 self.state_changed.emit(self.state.name)
-                # We do NOT auto-award XP here anymore, wait for explicit commit or user action if desired
-                # But requirement says "XP is awarded after they close Reviewer". 
-                # So we just sit in DONE state.
 
     def _accumulate_xp(self):
         config = manager.get_current_tea()
@@ -151,9 +157,55 @@ class SenchadoTimer(QObject):
             self.timer.start(1000)
             self._emit_tick()
 
+    def toggle_start_pause(self, outside_reviewer=False):
+        if self.state in (TimerState.IDLE, TimerState.DONE):
+            self.start_preparation(new_session=True, outside_reviewer=outside_reviewer)
+        elif self.state in (TimerState.PREPARATION, TimerState.BREWING):
+            self.pause()
+        elif self.state == TimerState.PAUSED:
+            if outside_reviewer:
+                self.run_outside_reviewer = True
+            self.resume()
+
+    def reset(self):
+        self.timer.stop()
+        config = manager.get_current_tea()
+        self.state = TimerState.IDLE
+        self.previous_state = TimerState.IDLE
+        self.total_time = int(config.get("prep_time", 1500) or 1500)
+        self.current_time = self.total_time
+        self.cycles_total = max(1, int(config.get("cycles", 1) or 1))
+        self.cycles_current = 0
+        self.pending_xp = 0
+        self.run_outside_reviewer = False
+        self.state_changed.emit(self.state.name)
+        self._emit_tick()
+
+    def complete_session(self):
+        """Mark the current study session as completed early, awarding XP and recording history."""
+        self.timer.stop()
+        if self.state == TimerState.DONE and self.pending_xp == 0:
+            return 0
+        if self.state in (TimerState.IDLE, TimerState.PREPARATION, TimerState.BREWING, TimerState.PAUSED):
+            self._accumulate_xp()
+        xp = self.commit_xp()
+        config = manager.get_current_tea()
+        self.cycles_total = max(1, int(config.get("cycles", 1) or 1))
+        self.cycles_current = self.cycles_total
+        self.total_time = max(1, int(self.total_time or config.get("prep_time", 1500) or 1500))
+        self.current_time = 0
+        self.state = TimerState.DONE
+        self.previous_state = TimerState.IDLE
+        self.run_outside_reviewer = False
+        self._play_sound("new_cycle.mp3")
+        self.state_changed.emit(self.state.name)
+        self._emit_tick()
+        return xp
+
     def stop(self):
         self.timer.stop()
         self.state = TimerState.IDLE
+        self.run_outside_reviewer = False
         self.state_changed.emit(self.state.name)
 
 # Global Instance

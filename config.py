@@ -23,14 +23,27 @@ DEFAULT_CONFIG = {
     "tea_history": [],
     "favorites": [],
     "ui_settings": {
-        "reviewer_position": "top-right", # Options: top-left, top-right, bottom-left, bottom-right
+        "reviewer_position": "top-right", # Options: top-left, top-right, bottom-left, bottom-right, etc.
         "silence_notifications": False,
+        "widget_style": "zen",
+        "widget_show_xp": True,
+        "widget_show_task": True,
+        "widget_show_brew_details": True,
+        "widget_tea_accent": False,
         "widget_opacity": 100,
         "widget_glass": False,
         "widget_glass_strength": 0,
+        "manual_widget_width": 400,
+        "manual_widget_height": 400,
+        "reviewer_style": "modern",
+        "reviewer_show_task": True,
+        "reviewer_tea_accent": False,
         "reviewer_opacity": 100,
         "reviewer_blur": 0,
-        "reviewer_minimal_mode_default": False
+        "reviewer_minimal_mode_default": False,
+        "reviewer_hide_cycle_counter": False,
+        "widget_card_color_light": "#FFFFFF",
+        "widget_card_color_dark": "#262925"
     }
 }
 
