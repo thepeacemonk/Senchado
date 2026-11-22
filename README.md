@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/cOVER.svg" alt="Senchado Header" width="100%">
+  <img src=".github/cover.svg" alt="Senchado Header" width="100%">
 </p>
 
 <h1 align="center">
