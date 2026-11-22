@@ -33,3 +33,11 @@ Flexible and minimal tea timer.
 ## 🍵  More of Senchadō
 
 <img src=".github/Showcase.svg" alt="Senchado Header" width="100%">
+
+### Support Senchadō
+
+<p align="center">
+<a href="https://www.buymeacoffee.com/peacemonk">
+  <img src=".github/BMAC.svg" alt="Donation Button" width="50%">
+</a>
+</p>
